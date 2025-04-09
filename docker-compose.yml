@@ -7,38 +7,41 @@ networks:
 
 services:
 
-  # nginx:
-  #   build: ./nginx
-  #   ports:
-  #     - 8005:80
-  #   volumes:
-  #     - static_volume:/home/app/code/static
-  #   depends_on:
-  #     - nmapper-web
-  #   restart: "on-failure"
-  #   networks:
-  #     - default
+  nginx:
+    build: ./nginx
+    ports:
+      - 1302:80
+    volumes:
+      - static_volume:/home/app/code/static
+    depends_on:
+      - nessus-web
+    restart: "on-failure"
+    networks:
+      - default
+    container_name: secusy-nessus-redis
 
   redis:
     image: docker.io/bitnami/redis:6.2
+    container_name: secusy-nessus-redis
     environment:
       # ALLOW_EMPTY_PASSWORD is recommended only for development.
-      - REDIS_URL=redis_db:6379
+      - REDIS_URL=redis_db:6378
       #- ALLOW_EMPTY_PASSWORD=yes
       - REDIS_PASSWORD=df7634#%4f
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
     ports:
-      - '6383:6379'
+      - '6383:6378'
     volumes:
-      - 'redis_data:/bitnami/redis/data'
+      - 'nessus_redis_data:/bitnami/redis/data'
     networks:
       - default
 
   nessus-db:
     image: mysql:5.7
-    container_name: nessus-db
+    command: mysqld --sql_mode=""
+    container_name: secusy-nessus-db
     ports:
-      - 3301:3306
+      - 3310:3306
     environment:
        MYSQL_DATABASE: nessus_db
        MYSQL_ROOT_PASSWORD: test1234
@@ -50,32 +53,26 @@ services:
       - default
     volumes:
       - nessus_volume:/var/lib/mysql
-      
+
   nessus-web:
     build: .
-    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8005"
+    container_name: secusy-nessus-web
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8003"
     volumes:
       - .:/code
-    ports:
-      - "8010:8005"
     depends_on:
       nessus-db:
           condition: service_healthy
     networks:
       - default
+    entrypoint: "./entry_point.sh"
+    expose:
+      - 8002
+    volumes:
+      - .:/home/app/code:rw # map data and files from parent directory in host to code directory in docker container
+      - static_volume:/home/app/code/static
 
 volumes:
-  # static_volume:
+  static_volume:
   nessus_volume:
-  redis_data:
-
-
-  # consider refactoring this
-  # redis:
-  #   image: 'bitnami/redis:latest'
-  #   environment:
-  #     - ALLOW_EMPTY_PASSWORD=yes
-  #   ports:
-  #     - "6379:6379"
-  #   networks:
-  #     - secusy
+  nessus_redis_data:
