@@ -1,0 +1,13 @@
+{
+	"name": "Nessus",
+	"version": "8.11.1 (#243) LINUX",
+	"description": "Vulnerability Scanner",
+	"server_host": "host.docker.internal",
+	"server_port": "8834",
+	"server_username": "nessus",
+	"server_password": "nessus",
+	"default_policy": "DEFAULT.nessus",
+	"access_key": "7e297672347a602bbb6ce8c68482f409fd27bf84abf790c2fd99050811e777a4",
+	"secret_key": "af9276b7a4e0a3304869c04cd59391c48215c591e3ff597e66671a03c1b80906",
+	"allowed_asset_types": ["ip", "domain", "ip-range", "ip-subnet", "url", "fqdn"]
+}

@@ -1,0 +1,27 @@
+Django>=3.0,<3.2
+psycopg2-binary>=2.8
+mysqlclient==2.0.3
+django-mysql==3.11.1
+djangorestframework
+django-q
+boto3
+redis
+django-cors-headers
+gunicorn==20.0.4
+django-environ
+#from git repo
+certifi
+chardet
+click
+idna
+itsdangerous
+Jinja2
+MarkupSafe
+requests
+urllib3
+werkzeug
+netaddr
+tinydb
+tinyrecord
+django_cron
+pyjwt
