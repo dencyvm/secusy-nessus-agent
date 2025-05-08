@@ -3,11 +3,13 @@ from django.core.cache import cache
 from django.conf import settings
 from datetime import datetime
 import redis as redis_lib
-import requests
-from urllib.parse import urljoin
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 
 
-def run_health_check():
+@api_view(['GET'])
+def health_check(request):
     health = {
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
@@ -16,7 +18,7 @@ def run_health_check():
         'redis': False,
     }
 
-    # DB Check
+    # Database check
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1;")
@@ -24,7 +26,7 @@ def run_health_check():
     except Exception as e:
         health['database_error'] = str(e)
 
-    # Cache Check
+    # Cache check
     try:
         cache.set('health_check', 'ok', timeout=5)
         if cache.get('health_check') == 'ok':
@@ -32,10 +34,9 @@ def run_health_check():
     except Exception as e:
         health['cache_error'] = str(e)
 
-    # Redis Check
     try:
         r = redis_lib.StrictRedis(
-            host='redis',
+            host='redis',  # container name as hostname (matches docker-compose service name)
             port=6379,
             password=settings.REDIS_PASSWORD,
             socket_connect_timeout=2
@@ -48,18 +49,4 @@ def run_health_check():
 
     all_ok = all([health['database'], health['redis']])
     health['status'] = 'ready' if all_ok else 'not_ready'
-
-    # Send status to main app API
-    try:
-        CORE_URL = settings.CORE_URL
-        endpoint = urljoin(CORE_URL, "/receive-health-status/")
-        response = requests.post(
-            endpoint,
-            json=health,
-            headers={'Authorization': f'Bearer {settings.MAIN_APP_API_TOKEN}'}
-        )
-        health['report_response'] = response.status_code
-    except Exception as e:
-        health['report_error'] = str(e)
-
-    return health
+    return Response(health, status=status.HTTP_200_OK if all_ok else status.HTTP_503_SERVICE_UNAVAILABLE)
