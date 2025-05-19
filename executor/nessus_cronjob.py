@@ -20,7 +20,7 @@ class PerformScan(CronJobBase):
     def do(self):
         print("NESSUS Cronjob running")
         try:
-            scans = Scan.objects.filter(scan_status__in=[0,1,2]) # inprogress scans
+            scans = Scan.objects.filter(scan_status__in=[0,1]) # inprogress scans
             print("Scan count >>> ",scans.count())
 
             result_bucket = settings.S3_BUCKET_NAME
@@ -86,7 +86,7 @@ class PerformScan(CronJobBase):
                         scope.scan_status = FAILED
                         scope.errors = "file status is not ready."
                         scope.save()
-                    print("scope", scope.result_url)
+                        
                     # Update to core app
                     update_result_to_core_app(scope)
                 except Exception as e:

@@ -1,16 +1,13 @@
 from django.db import connection
 from django.core.cache import cache
-from django.conf import settings
 from datetime import datetime
 import redis as redis_lib
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
+from django.conf import settings
 
 
-@api_view(['GET'])
-def health_check(request):
+def perform_health_check():
     health = {
+        'scanner': 'nessus',
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'database': False,
@@ -34,9 +31,10 @@ def health_check(request):
     except Exception as e:
         health['cache_error'] = str(e)
 
+    # Redis check
     try:
         r = redis_lib.StrictRedis(
-            host='redis',  # container name as hostname (matches docker-compose service name)
+            host='redis',
             port=6379,
             password=settings.REDIS_PASSWORD,
             socket_connect_timeout=2
@@ -47,6 +45,8 @@ def health_check(request):
     except Exception as e:
         health['redis_error'] = str(e)
 
+    # Determine readiness
     all_ok = all([health['database'], health['redis']])
     health['status'] = 'ready' if all_ok else 'not_ready'
-    return Response(health, status=status.HTTP_200_OK if all_ok else status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return health

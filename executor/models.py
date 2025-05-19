@@ -14,6 +14,7 @@ class Scan(models.Model):
     policy_file = models.TextField(blank=True, null=True)
     scan_scope = models.CharField(blank=True,null=True, max_length=250) # For group-scan and single-scan
     org_ref_id = models.CharField(max_length=350,blank=True,null=True)
+    scan_type = models.CharField(max_length=350,blank=True,null=True)
 
 
 #Check if we can use in-memory classes

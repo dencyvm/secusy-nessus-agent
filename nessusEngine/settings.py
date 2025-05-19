@@ -146,7 +146,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = 'static/'
 
 # Default primary key field type
@@ -172,3 +172,5 @@ NESSUS_SECRET_KEY = env('NESSUS_SECRET_KEY', default="")
 CORE_URL = env('CORE_URL',default='http://3.29.96.110/api/')
 JWT_SERVICE_SECRET = env('JWT_SERVICE_SECRET', default='')
 REDIS_PASSWORD = env('REDIS_PASSWORD', default='')
+ORG_ID = env('ORG_ID', default=None)
+NETWORK_LOCATION = env('NETWORK_LOCATION', default=None)

@@ -9,13 +9,13 @@ import pathlib
 import os
 import requests
 from nessusEngine.utils import generate_jwt_service_token
+import ipaddress
 
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def update_result_to_core_app(scanInstance):
-    print("Uploading to Core API")
     try:
         core_url = settings.CORE_URL.strip("/")
         endpoint = f"{core_url}/scan/refresh-scan/"
@@ -24,7 +24,8 @@ def update_result_to_core_app(scanInstance):
             "agent_type_code": 'nessus',
             "result_url": scanInstance.result_url,
             "errors": scanInstance.errors,
-            "scan_status": scanInstance.scan_status
+            "scan_status": scanInstance.scan_status,
+            "scan_type": scanInstance.scan_type
         }
         service_token = generate_jwt_service_token()
         headers = {
@@ -34,7 +35,6 @@ def update_result_to_core_app(scanInstance):
 
         res = requests.post(endpoint, json=payload, headers=headers, timeout=15)
         response = res.json()
-        print(response)
 
         if response['status'] == 'success':
             return True
@@ -56,6 +56,31 @@ def is_url(url):
     return all([result.scheme, result.netloc])
   except ValueError:
     return False
+
+
+def clean_targets(raw_targets):
+    target_list = [t.strip() for t in raw_targets.split(',') if t.strip()]
+    resolved_target_list = []
+
+    for target in target_list:
+        cleaned_target = target
+
+        # If it's a full URL (with http/https), extract the netloc
+        if cleaned_target.startswith(('http://', 'https://')):
+            cleaned_target = urlparse(cleaned_target).netloc
+
+        # If it's not an IP or CIDR, but contains a path (e.g., domain.com/path)
+        if '/' in cleaned_target:
+            try:
+                # If it's a valid IP or CIDR, keep as-is
+                ipaddress.ip_network(cleaned_target, strict=False)
+            except ValueError:
+                # Not an IP/CIDR, strip trailing path from domain
+                cleaned_target = cleaned_target.split('/')[0]
+
+        resolved_target_list.append(cleaned_target)
+
+    return ','.join(resolved_target_list)
 
 
 def nessusscanner(scanInstance):
@@ -118,15 +143,18 @@ def nessusscanner(scanInstance):
             
             ##### varifying ip address #########
             try:
-                target_list= scanInstance.target.split(',')
-                resolved_target_list = []
-                for item in target_list:
-                    resolved_target = item
-                    if is_url(resolved_target):
-                        resolved_target = urlparse(resolved_target).netloc
-                    to_check = resolved_target.rsplit('/', 1)
-                    resolved_target_list.append(to_check[0])
-                scanInstance.resolved_target = ','.join(resolved_target_list)
+                # target_list= scanInstance.target.split(',')
+                # resolved_target_list = []
+                # for item in target_list:
+                #     resolved_target = item
+                #     if is_url(resolved_target):
+                #         resolved_target = urlparse(resolved_target).netloc
+                #     to_check = resolved_target.rsplit('/', 1)
+                #     resolved_target_list.append(to_check[0])
+                # scanInstance.resolved_target = ','.join(resolved_target_list)
+
+
+                scanInstance.resolved_target = clean_targets(scanInstance.target)
                 print(scanInstance.resolved_target,"<<< resolved target >>>")
             except Exception as e:
                 saveStatus(scanInstance, FAILED, e.__class__.__name__)
