@@ -83,8 +83,7 @@ class PerformScan(CronJobBase):
                             os.remove(report_file_path)
                     else:
                         # print("scan ststus is not ready")
-                        scope.scan_status = FAILED
-                        scope.errors = "file status is not ready."
+                        scope.scan_status = IN_PROGRESS
                         scope.save()
                         
                     # Update to core app
