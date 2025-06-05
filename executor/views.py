@@ -7,9 +7,9 @@ from executor.models import Scan
 from executor.serializers import ScanSerializer
 from executor.tasks import nessusscanner
 from django_q.tasks import async_task
-import os
 from rest_framework.decorators import api_view
-
+from nessus.ext_libraries.nessrest.nessrest import ness6rest
+from django.conf import settings
 
 
 
@@ -56,3 +56,52 @@ def delete(request):
             return JsonResponse({'status': 'true'})
     except:
         return JsonResponse({'status': 'false', 'error':str(sys.exc_info())})
+
+
+def get_nessus_client():
+    return ness6rest.Scanner(
+        url="https://{}:{}".format(settings.SERVER_HOST, settings.SERVER_PORT),
+        login=settings.NESSUS_USERNAME,
+        password=settings.NESSUS_PWD,
+        insecure=True
+    )
+
+@csrf_exempt
+def pause_scan(request, scan_id):
+    try:
+        scan = Scan.objects.get(scan_id=scan_id)
+        client = get_nessus_client()
+        client.action(
+            action=f"scans/{scan.nessus_scan_id}/pause",
+            method="POST"
+        )
+        return JsonResponse({'status': 'success', 'message': 'Scan paused'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def resume_scan(request, scan_id):
+    try:
+        scan = Scan.objects.get(scan_id=scan_id)
+        client = get_nessus_client()
+        client.action(
+            action=f"scans/{scan.nessus_scan_id}/resume",
+            method="POST"
+        )
+        return JsonResponse({'status': 'success', 'message': 'Scan resumed'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+@csrf_exempt
+def stop_scan(request, scan_id):
+    try:
+        scan = Scan.objects.get(scan_id=scan_id)
+        client = get_nessus_client()
+        client.action(
+            action=f"scans/{scan.nessus_scan_id}/stop",
+            method="POST"
+        )
+        return JsonResponse({'status': 'success', 'message': 'Scan stopped'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+    
